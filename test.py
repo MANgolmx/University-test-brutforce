@@ -278,18 +278,29 @@ else:
     print('False')
     '''
 
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from typing import List, Dict, Any, Optional
+from bs4 import BeautifulSoup
+import random
+import time
 import json
-from typing import List, Dict, Any
+import re
 
 def normalize_string(s: str) -> str:
     return ' '.join(s.split())
 
-def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
-    def clean_text(text: str) -> str:
+def clean_text(text: str) -> str:
         if text is None:
             return ""
-        return text.replace(' ', '').replace('\n', '')
+        text_copy = text
+        return text_copy.replace(' ', '').replace('\n', '')
 
+def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
     try:
         with open(filename, 'r') as jsonfile:
             existing_data = json.load(jsonfile)
@@ -297,31 +308,33 @@ def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
         existing_data = []
 
     for item in data:
-        item['name'] = clean_text(item.get('name', ''))
-        item['answer_right'] = clean_text(item.get('answer_right', ''))
-        if item['answer_right'] == "":
-            item['answer_right'] = None
-        item['answer_wrong'] = [clean_text(wrong) for wrong in item.get('answer_wrong', [])]
-
-        existing_item = next((x for x in existing_data if clean_text(x['name']) == item['name']), None)
+        existing_item = next((x for x in existing_data if x['name'] == item['name']), None)
         
         if existing_item:
             existing_wrong = existing_item.get('answer_wrong', [])
             if isinstance(existing_wrong, int):
                 existing_wrong = [existing_wrong]
-
-            existing_wrong = [clean_text(wrong) for wrong in existing_wrong]
             unique_wrong_values = [wrong for wrong in item['answer_wrong'] if wrong not in existing_wrong]
             existing_wrong.extend(unique_wrong_values)
-
             existing_item['answer_wrong'] = existing_wrong
             existing_item['solved'] = item['solved']
-            existing_item['answer_right'] = clean_text(item.get('answer_right', ''))
+            existing_item['answer_right'] = item['answer_right']
         else:
             existing_data.append(item)
 
     with open(filename, 'w') as jsonfile:
         json.dump(existing_data, jsonfile, indent=4)
+
+def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]]:
+    try:
+        with open(filename, 'r') as jsonfile:
+            existing_data = json.load(jsonfile)
+    except FileNotFoundError:
+        print("Database file not found.")
+        return None
+
+    normalized_item_name = clean_text(normalize_string(item_name))
+    return next((item for item in existing_data if clean_text(normalize_string(item['name'])) == normalized_item_name), None)
 
 # Test data
 data = [
@@ -347,3 +360,7 @@ data = [
 
 # Push to database
 push_to_database('database.json', data)
+
+element = "String with spaces"
+print(clean_text(element))
+print(element)

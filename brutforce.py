@@ -53,26 +53,17 @@ def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
         existing_data = []
 
     for item in data:
-        item['name'] = clean_text(item.get('name', ''))
-        item['answer_right'] = clean_text(item.get('answer_right', ''))
-        if item['answer_right'] == "":
-            item['answer_right'] = None
-        item['answer_wrong'] = [clean_text(wrong) for wrong in item.get('answer_wrong', [])]
-
-        existing_item = next((x for x in existing_data if clean_text(x['name']) == item['name']), None)
+        existing_item = next((x for x in existing_data if x['name'] == item['name']), None)
         
         if existing_item:
             existing_wrong = existing_item.get('answer_wrong', [])
             if isinstance(existing_wrong, int):
                 existing_wrong = [existing_wrong]
-
-            existing_wrong = [clean_text(wrong) for wrong in existing_wrong]
             unique_wrong_values = [wrong for wrong in item['answer_wrong'] if wrong not in existing_wrong]
             existing_wrong.extend(unique_wrong_values)
-
             existing_item['answer_wrong'] = existing_wrong
             existing_item['solved'] = item['solved']
-            existing_item['answer_right'] = clean_text(item.get('answer_right', ''))
+            existing_item['answer_right'] = item['answer_right']
         else:
             existing_data.append(item)
 
@@ -87,8 +78,8 @@ def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]
         print("Database file not found.")
         return None
 
-    normalized_item_name = normalize_string(item_name)
-    return next((item for item in existing_data if normalize_string(item['name']) == normalized_item_name), None)
+    normalized_item_name = clean_text(normalize_string(item_name))
+    return next((item for item in existing_data if clean_text(normalize_string(item['name'])) == normalized_item_name), None)
 
 def normalize_element(element):
     # Convert element to string and remove extra whitespace and newlines
@@ -156,9 +147,8 @@ while True:
         if not isStarted:
             time.sleep(3)
 
-            
             if 'startattempt' in driver.current_url:
-                form_button = driver.find_element(By.CSS_SELECTOR, 'input[type="submit"][class="btn-primary"]')
+                form_button = driver.find_element(By.CSS_SELECTOR, 'input[type="submit"][name="submitbutton"]')
                 if not form_button:
                     print('Second page tart test button not found')
                     exit()
@@ -215,7 +205,7 @@ while True:
                     continue
                 
                 print('\nTrying to pull question from database')
-                current_question = pull_from_database('data_'+target_url[-2:]+'.json', clean_text(paragraph.get_text()))
+                current_question = pull_from_database('data_'+target_url[-2:]+'.json', paragraph.get_text())
                 current_answer = ''
                 isAnswered = False
                 if current_question and current_question['solved'] == True:
