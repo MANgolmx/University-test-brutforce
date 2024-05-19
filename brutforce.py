@@ -36,7 +36,15 @@ def convert_to_database_format(data):
     
     return new_data
 
+def normalize_string(s: str) -> str:
+    return ' '.join(s.split())
+
 def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
+    def clean_text(text: str) -> str:
+        if text is None:
+            return ""
+        return text.replace(' ', '').replace('\n', '')
+
     try:
         with open(filename, 'r') as jsonfile:
             existing_data = json.load(jsonfile)
@@ -44,25 +52,31 @@ def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
         existing_data = []
 
     for item in data:
-        existing_item = next((x for x in existing_data if x['name'] == item['name']), None)
+        item['name'] = clean_text(item.get('name', ''))
+        item['answer_right'] = clean_text(item.get('answer_right', ''))
+        if item['answer_right'] == "":
+            item['answer_right'] = None
+        item['answer_wrong'] = [clean_text(wrong) for wrong in item.get('answer_wrong', [])]
+
+        existing_item = next((x for x in existing_data if clean_text(x['name']) == item['name']), None)
         
         if existing_item:
             existing_wrong = existing_item.get('answer_wrong', [])
             if isinstance(existing_wrong, int):
                 existing_wrong = [existing_wrong]
+
+            existing_wrong = [clean_text(wrong) for wrong in existing_wrong]
             unique_wrong_values = [wrong for wrong in item['answer_wrong'] if wrong not in existing_wrong]
             existing_wrong.extend(unique_wrong_values)
+
             existing_item['answer_wrong'] = existing_wrong
             existing_item['solved'] = item['solved']
-            existing_item['answer_right'] = item['answer_right']
+            existing_item['answer_right'] = clean_text(item.get('answer_right', ''))
         else:
             existing_data.append(item)
 
     with open(filename, 'w') as jsonfile:
         json.dump(existing_data, jsonfile, indent=4)
-
-def normalize_string(s: str) -> str:
-    return ' '.join(s.split())
 
 def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]]:
     try:
@@ -229,7 +243,7 @@ while True:
                             if answer_children[answer_index] not in current_question['answer_wrong']:
                                 current_answer = answer_children[answer_index]
                                 break
-                        print('Answer randomly generated')
+                        print('Answer was randomly generated')
 
                         current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index])})
                 else:
