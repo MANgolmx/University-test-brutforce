@@ -13,7 +13,7 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=55'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=56'
 
 # Your login credentials
 username = ''
@@ -125,6 +125,9 @@ while True:
             exit() 
 
         form_button = form.find_element(By.TAG_NAME, "button")
+        if not form_button:
+            print('Start test button not found')
+            exit()
 
         isStarted = False
         if form_button.text == 'Продолжить последнюю попытку':
@@ -133,20 +136,35 @@ while True:
         form_button.click()
 
         if not isStarted:
-            # Wait for dialogue element to appear
-            dialogue_element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'moodle-dialogue-base')))
-            if not dialogue_element:
-                print('Element with class "moodle-dialogue-base" not found.')
-                exit()
+            time.sleep(3)
 
-            # Find the form within the dialogue element
-            form = dialogue_element.find_element(By.TAG_NAME, 'form')
-            if not form:
-                print('Form was not found.')
-                exit() 
+            
+            if 'startattempt' in driver.current_url:
+                form_button = driver.find_element(By.CSS_SELECTOR, 'input[type="submit"][class="btn-primary"]')
+                if not form_button:
+                    print('Second page tart test button not found')
+                    exit()
 
-            form_button = form.find_element(By.XPATH, "//input[@type='submit']")
-            form_button.click()
+                form_button.click()
+            else:
+                # Wait for dialogue element to appear
+                dialogue_element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'moodle-dialogue-base')))
+                if not dialogue_element:
+                    print('Element with class "moodle-dialogue-base" not found.')
+                    exit()
+
+                # Find the form within the dialogue element
+                form = dialogue_element.find_element(By.TAG_NAME, 'form')
+                if not form:
+                    print('Form was not found.')
+                    exit() 
+
+                form_button = form.find_element(By.XPATH, "//input[@type='submit']")
+                if not form_button:
+                    print('Pop up start test button not found')
+                    exit()
+
+                form_button.click()
 
         current_data = []
 
@@ -289,11 +307,13 @@ while True:
             print('answer_children for test not found.')
             exit()
 
+        print('Answers are correct: ', end='')
         ans_index = 0
         for answer in answer_children:
             ans_index += 1
             if 'correct' in answer.get_attribute('class').split():
                 set_answer_solved_by_index(current_data, ans_index)
+                print(ans_index, end=' ')
 
         push_to_database('data_'+target_url[-2:]+'.json', convert_to_database_format(current_data))
         print('\n\nData saved to data_'+target_url[-2:]+'.json')
