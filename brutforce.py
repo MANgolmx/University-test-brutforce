@@ -217,6 +217,7 @@ while True:
 
                     for answer in answer_children:
                         if compare_elements(answer, current_answer):
+                            current_answer = answer
                             isAnswered = True
                             print('Answer found in database')
                             break
