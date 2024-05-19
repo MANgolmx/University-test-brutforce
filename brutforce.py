@@ -39,12 +39,13 @@ def convert_to_database_format(data):
 def normalize_string(s: str) -> str:
     return ' '.join(s.split())
 
-def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
-    def clean_text(text: str) -> str:
+def clean_text(text: str) -> str:
         if text is None:
             return ""
-        return text.replace(' ', '').replace('\n', '')
+        text_copy = text
+        return text_copy.replace(' ', '').replace('\n', '')
 
+def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
     try:
         with open(filename, 'r') as jsonfile:
             existing_data = json.load(jsonfile)
@@ -109,6 +110,9 @@ def set_answer_solved_by_index(data, target_index):
             item['answer_right'] = item['answer']
 
 while True:
+    # Set up Chrome options for headless mode
+    #options = webdriver.ChromeOptions()
+    #options.add_argument('--headless')
     # Start a Selenium WebDriver session
     service = Service(driver_path)
     driver = webdriver.Chrome(service=service)
@@ -211,7 +215,7 @@ while True:
                     continue
                 
                 print('\nTrying to pull question from database')
-                current_question = pull_from_database('data_'+target_url[-2:]+'.json', paragraph.get_text())
+                current_question = pull_from_database('data_'+target_url[-2:]+'.json', clean_text(paragraph.get_text()))
                 current_answer = ''
                 isAnswered = False
                 if current_question and current_question['solved'] == True:
@@ -230,7 +234,7 @@ while True:
                         continue
 
                     for answer in answer_children:
-                        if compare_elements(answer, current_answer):
+                        if compare_elements(clean_text(str(answer)), clean_text(current_answer)):
                             current_answer = answer
                             isAnswered = True
                             print('Answer found in database')
