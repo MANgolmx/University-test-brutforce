@@ -197,7 +197,7 @@ if form_response.status_code == 200:
         print(f'Element with class "{parent_class}" not found on the redirected page.')
 else:
     print('Form submission failed.')
-'''
+
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -230,3 +230,45 @@ for answer in answer_children:
         print("This answer is correct.")
     else:
         print("This answer is not correct.")
+'''
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from typing import List, Dict, Any, Optional
+from bs4 import BeautifulSoup
+import random
+import time
+import json
+import re
+
+
+def normalize_string(s: str) -> str:
+    return ' '.join(s.split())
+
+def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]]:
+    try:
+        with open(filename, 'r') as jsonfile:
+            existing_data = json.load(jsonfile)
+    except FileNotFoundError:
+        print("Database file not found.")
+        return None
+
+    normalized_item_name = normalize_string(item_name)
+    return next((item for item in existing_data if normalize_string(item['name']) == normalized_item_name), None)
+
+str = """
+ \u041f\u0435\u0440\u0432\u043e\u0435 \u043d\u0430\u0447\u0430\u043b\u043e \u0442\u0435\u0440\u043c\u043e\u0434\u0438\u043d\u0430\u043c\u0438\u043a\u0438 \u0434\u043b\u044f \u0438\u0437\u043e\u0442\u0435\u0440\u043c\u0438\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0430: (Q -\u0442\u0435\u043f\u043b\u043e\u0442\u0430, \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u043d\u0430\u044f \u0433\u0430\u0437\u0443, \u0394U - \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u0438\u0435 \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0435\u0439 \u044d\u043d\u0435\u0440\u0433\u0438\u0438, A - \u0440\u0430\u0431\u043e\u0442\u0430 \u0433\u0430\u0437\u0430)
+"""
+
+element = pull_from_database("data_56.json", str)
+
+if not element:
+    print('Not found')
+
+if element['solved'] == True:
+    print('True')
+else:
+    print('False')

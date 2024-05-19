@@ -13,14 +13,14 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=55'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=56'
 
 # Your login credentials
-username = ''
-password = ''
+username = 'misammmmm@inbox.ru'
+password = '#89OO3657228Mm'
 
 # Path to your WebDriver
-driver_path = ''  # Update with the correct path
+driver_path = 'C:\\Users\\misam\\OneDrive\\Документы\\chromedriver-win64\\chromedriver.exe'  # Update with the correct path
 
 def convert_to_database_format(data):
     new_data = []
@@ -61,9 +61,6 @@ def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
     with open(filename, 'w') as jsonfile:
         json.dump(existing_data, jsonfile, indent=4)
 
-def normalize_string(s: str) -> str:
-    return ' '.join(s.split())
-
 def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]]:
     try:
         with open(filename, 'r') as jsonfile:
@@ -72,8 +69,7 @@ def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]
         print("Database file not found.")
         return None
 
-    normalized_item_name = normalize_string(item_name)
-    return next((item for item in existing_data if normalize_string(item['name']) == normalized_item_name), None)
+    return next((item for item in existing_data if item['name'] == item_name), None)
 
 def normalize_element(element):
     # Convert element to string and remove extra whitespace and newlines
@@ -113,7 +109,6 @@ while True:
         # Wait for the login to complete and the main page to load
         wait = WebDriverWait(driver, 5)
 
-        print('\nStarting test id:'+target_url[-2:])
         # Navigate to the target page
         driver.get(target_url)
         wait.until(EC.url_to_be(target_url))
@@ -180,22 +175,19 @@ while True:
                 
                 print('\nTrying to pull question from database')
                 current_question = pull_from_database('data_'+target_url[-2:]+'.json', paragraph.get_text())
+                print(current_question)
                 current_answer = ''
                 isAnswered = False
                 if current_question and current_question['solved'] == True:
                     current_answer = current_question['answer_right']
 
                     answers = que.find(class_='answer')
-                    if not answers:
-                        print('None answer fields were found.')
-                        continue
-
-                    answer_children = list(answers.find_all('div', class_=["flex-fill", "ml-1"]))
+                    answer_children = list(answers.children)
                     answer_children = [child for child in answer_children if child.name is not None]
 
                     if not answer_children or len(answer_children) == 0:
                         print('Did not found any answer_children')
-                        continue
+                        break
 
                     for answer in answer_children:
                         if compare_elements(answer, current_answer):
@@ -215,16 +207,12 @@ while True:
                         current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index])})
                 else:
                     answers = que.find(class_='answer')
-                    if not answers:
-                        print('None answer fields were found.')
-                        continue
-
-                    answer_children = list(answers.find_all('div', class_=["flex-fill", "ml-1"]))
+                    answer_children = list(answers.children)
                     answer_children = [child for child in answer_children if child.name is not None]
 
                     if not answer_children or len(answer_children) == 0:
                         print('Did not found any answer_children')
-                        continue
+                        break
 
                     for k in range(10000):
                             answer_index = random.randint(0, len(answer_children) - 1)
@@ -238,10 +226,10 @@ while True:
 
                 if isAnswered:
                     # Click the radio button within the current_answer
-                    radio_button = current_answer.parent.parent.find('input', {'type': 'radio'})
+                    radio_button = current_answer.find('input', {'type': 'radio'})
                     if not radio_button:
                         print('Radio button for answer was not found.')
-                        continue
+                        break
 
                     radio_button_id = radio_button['id']
                     radio_button_element = driver.find_element(By.ID, radio_button_id)
