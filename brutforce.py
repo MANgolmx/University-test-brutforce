@@ -14,7 +14,7 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=55'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=57'
 
 # Your login credentials
 username = ''
@@ -66,7 +66,10 @@ def push_to_database(filename, datalist):
             if entry['name'] == data['name']:
                 entry['solved'] = data['solved']
                 entry['answer_right'] = data['answer_right']
-                entry['answer_wrong'] = list(set(entry['answer_wrong'] + data['answer_wrong']))
+                if data['answer_right']:
+                    entry['answer_wrong'] = list(None)
+                else:
+                    entry['answer_wrong'] = list(set(entry['answer_wrong'] + data['answer_wrong']))
                 found = True
                 break
         
@@ -101,10 +104,10 @@ def compare_elements(element1, element2):
     # Normalize and compare the string representations
     return clean_text(element1) == clean_text(element2)
 
-def set_answer_solved_by_index(datalist, target_index):
+def set_answer_solved_by_index(datalist, target_index, val : bool):
     for item in datalist:
         if item['index'] == target_index:
-            item['solved'] = True
+            item['solved'] = val
             item['answer_right'] = item['answer']
 
 while True:
@@ -219,7 +222,6 @@ while True:
                     current_answer = current_question['answer_right']
                     #print(paragraph.get_text())
                     #print(current_answer)
-                    
 
                     answers = que.find(class_='answer')
                     if not answers:
@@ -238,6 +240,7 @@ while True:
                             current_answer = answer
                             isAnswered = True
                             print(que_count + page * 5, ': Answer found in database')
+                            current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":True ,"answer": str(answer_children[answer_index].text)})
                             break
                         
                     if not isAnswered:
@@ -274,8 +277,8 @@ while True:
                             isAnswered = True
                             if clean_text(answer_children[answer_index].text) not in current_question['answer_wrong']:
                                 break
-                            else:
-                                print(que_count + page * 5, ': Generated answer is found to be wrong.')
+                            #else:
+                                #print(que_count + page * 5, ': Generated answer is found to be wrong.')
                     print(que_count + page * 5, ': Answer randomly generated')
 
                     current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index].text)})
@@ -335,12 +338,17 @@ while True:
 
         print('Answers are correct: ', end='')
         ans_index = 0
+        wrong_answers = 'Answers change Solved to False: '
         for answer in answer_children:
             ans_index += 1
             if 'correct' in answer.get_attribute('class').split():
-                set_answer_solved_by_index(current_data, ans_index)
+                set_answer_solved_by_index(current_data, ans_index, True)
                 print(ans_index, end=' ')
+            if 'incorrect' in answer.get_attribute('class').split():
+                set_answer_solved_by_index(current_data, ans_index, False)
+                wrong_answers += str(ans_index) + ' '
 
+        print(wrong_answers)
         push_to_database('data_'+target_url[-2:]+'.json', convert_to_database_format(current_data))
         print('\n\nData saved to data_'+target_url[-2:]+'.json')
         print('Waiting for next cycle')
