@@ -4,6 +4,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import os
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
 import random
@@ -13,7 +14,7 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=56'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=55'
 
 # Your login credentials
 username = ''
@@ -36,66 +37,72 @@ def convert_to_database_format(data):
     
     return new_data
 
-def normalize_string(s: str) -> str:
-    return ' '.join(s.split())
+def clean_text(text):
+    if text == None:
+        return ""
+    return text.replace(' ', '').replace('\n', '')
 
-def clean_text(text: str) -> str:
-        if text is None:
-            return ""
-        text_copy = text
-        return text_copy.replace(' ', '').replace('\n', '')
+def push_to_database(filename, datalist):
+    """
+    Pushes datalist to database. If an entry with the same name exists, it updates the existing entry.
+    Otherwise, it adds a new entry.
+    """
+    # Load existing data from the database file
+    if os.path.exists(filename):
+        with open(filename, 'r') as file:
+            database = json.load(file)
+    else:
+        database = []
 
-def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
-    try:
-        with open(filename, 'r') as jsonfile:
-            existing_data = json.load(jsonfile)
-    except FileNotFoundError:
-        existing_data = []
-
-    for item in data:
-        existing_item = next((x for x in existing_data if x['name'] == item['name']), None)
+    # Clean and update the datalist
+    for data in datalist:
+        data['name'] = clean_text(data['name'])
+        data['answer_right'] = clean_text(data['answer_right'])
+        data['answer_wrong'] = [clean_text(wrong) for wrong in data['answer_wrong']]
         
-        if existing_item:
-            existing_wrong = existing_item.get('answer_wrong', [])
-            if isinstance(existing_wrong, int):
-                existing_wrong = [existing_wrong]
-            unique_wrong_values = [wrong for wrong in item['answer_wrong'] if wrong not in existing_wrong]
-            existing_wrong.extend(unique_wrong_values)
-            existing_item['answer_wrong'] = existing_wrong
-            existing_item['solved'] = item['solved']
-            existing_item['answer_right'] = item['answer_right']
-        else:
-            existing_data.append(item)
+        # Check if the data with this name already exists in the database
+        found = False
+        for entry in database:
+            if entry['name'] == data['name']:
+                entry['solved'] = data['solved']
+                entry['answer_right'] = data['answer_right']
+                entry['answer_wrong'] = list(set(entry['answer_wrong'] + data['answer_wrong']))
+                found = True
+                break
+        
+        if not found:
+            database.append(data)
+    
+    # Write the updated data back to the database file
+    with open(filename, 'w') as file:
+        json.dump(database, file, indent=4)
 
-    with open(filename, 'w') as jsonfile:
-        json.dump(existing_data, jsonfile, indent=4)
-
-def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]]:
-    try:
-        with open(filename, 'r') as jsonfile:
-            existing_data = json.load(jsonfile)
-    except FileNotFoundError:
-        print("Database file not found.")
+def pull_from_database(filename, data_name):
+    """
+    Pulls data from the database by name.
+    """
+    data_name = clean_text(data_name)
+    
+    # Load existing data from the database file
+    if os.path.exists(filename):
+        with open(filename, 'r') as file:
+            database = json.load(file)
+    else:
         return None
 
-    normalized_item_name = clean_text(normalize_string(item_name))
-    return next((item for item in existing_data if clean_text(normalize_string(item['name'])) == normalized_item_name), None)
-
-def normalize_element(element):
-    # Convert element to string and remove extra whitespace and newlines
-    html_str = str(element)
-    # Remove leading/trailing whitespace and newlines
-    html_str = html_str.strip()
-    # Replace multiple spaces with a single space
-    html_str = re.sub(r'\s+', ' ', html_str)
-    return html_str
+    # Search for the data with the given name
+    for entry in database:
+        if entry['name'] == data_name:
+            return entry
+    
+    return None
 
 def compare_elements(element1, element2):
     # Normalize and compare the string representations
-    return normalize_element(element1) == normalize_element(element2)
+    return clean_text(element1) == clean_text(element2)
 
-def set_answer_solved_by_index(data, target_index):
-    for item in data:
+def set_answer_solved_by_index(datalist, target_index):
+    for item in datalist:
         if item['index'] == target_index:
             item['solved'] = True
             item['answer_right'] = item['answer']
@@ -139,7 +146,7 @@ while True:
             exit()
 
         isStarted = False
-        if form_button.text == 'Продолжить последнюю попытку':
+        if 'Продолжить последнюю попытку' in form_button.text:
             isStarted = True
 
         form_button.click()
@@ -196,20 +203,23 @@ while True:
                 que_count += 1
                 qText = que.find(class_='qtext')
                 if not qText:
-                    print('Question not found.')
+                    print('\nQuestion not found.')
                     continue
                 
                 paragraph = qText.find('p')
                 if not paragraph:
-                    print('Question paragraph not found.')
+                    print('\nQuestion paragraph not found.')
                     continue
                 
-                print('\nTrying to pull question from database')
+                print('\nTrying to find question in database')
                 current_question = pull_from_database('data_'+target_url[-2:]+'.json', paragraph.get_text())
                 current_answer = ''
                 isAnswered = False
                 if current_question and current_question['solved'] == True:
                     current_answer = current_question['answer_right']
+                    print(paragraph.get_text())
+                    print(current_answer)
+                    
 
                     answers = que.find(class_='answer')
                     if not answers:
@@ -224,22 +234,22 @@ while True:
                         continue
 
                     for answer in answer_children:
-                        if compare_elements(clean_text(str(answer)), clean_text(current_answer)):
+                        if compare_elements(answer.text, current_answer):
                             current_answer = answer
                             isAnswered = True
-                            print('Answer found in database')
+                            print(que_count + page * 5, ': Answer found in database')
                             break
                         
                     if not isAnswered:
                         for k in range(10000):
                             answer_index = random.randint(0, len(answer_children) - 1)
                             isAnswered = True
-                            if answer_children[answer_index] not in current_question['answer_wrong']:
-                                current_answer = answer_children[answer_index]
+                            current_answer = answer_children[answer_index]
+                            if clean_text(answer_children[answer_index].text) not in current_question['answer_wrong']:
                                 break
-                        print('Answer was randomly generated')
+                        print(que_count + page * 5, ': Answer was randomly generated')
 
-                        current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index])})
+                        current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index].text)})
                 else:
                     answers = que.find(class_='answer')
                     if not answers:
@@ -253,15 +263,22 @@ while True:
                         print('Did not found any answer_children')
                         continue
 
-                    for k in range(10000):
+                    if not current_question:
+                        answer_index = random.randint(0, len(answer_children) - 1)
+                        current_answer = answer_children[answer_index]
+                        isAnswered = True
+                    else:
+                        for k in range(10000):
                             answer_index = random.randint(0, len(answer_children) - 1)
                             current_answer = answer_children[answer_index]
                             isAnswered = True
-                            if current_question and answer_children[answer_index] not in current_question['answer_wrong']:
+                            if clean_text(answer_children[answer_index].text) not in current_question['answer_wrong']:
                                 break
-                    print('Answer randomly generated')
+                            else:
+                                print(que_count + page * 5, ': Generated answer is found to be wrong.')
+                    print(que_count + page * 5, ': Answer randomly generated')
 
-                    current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index])})
+                    current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":False ,"answer": str(answer_children[answer_index].text)})
 
                 if isAnswered:
                     # Click the radio button within the current_answer
@@ -331,4 +348,4 @@ while True:
     finally:
         # Wait for next cycle
         driver.quit()
-        time.sleep(300)
+        time.sleep(3)

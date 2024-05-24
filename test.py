@@ -278,89 +278,78 @@ else:
     print('False')
     '''
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from typing import List, Dict, Any, Optional
-from bs4 import BeautifulSoup
-import random
-import time
 import json
-import re
+import os
 
-def normalize_string(s: str) -> str:
-    return ' '.join(s.split())
+DATABASE_FILE = 'data_55.json'
 
-def clean_text(text: str) -> str:
-        if text is None:
-            return ""
-        text_copy = text
-        return text_copy.replace(' ', '').replace('\n', '')
+def clean_text(text):
+    if text == None:
+        return ""
+    return text.replace(' ', '').replace('\n', '')
 
-def push_to_database(filename: str, data: List[Dict[str, Any]]) -> None:
-    try:
-        with open(filename, 'r') as jsonfile:
-            existing_data = json.load(jsonfile)
-    except FileNotFoundError:
-        existing_data = []
+def push_to_database(datalist):
+    """
+    Pushes datalist to database. If an entry with the same name exists, it updates the existing entry.
+    Otherwise, it adds a new entry.
+    """
+    # Load existing data from the database file
+    if os.path.exists(DATABASE_FILE):
+        with open(DATABASE_FILE, 'r') as file:
+            database = json.load(file)
+    else:
+        database = []
 
-    for item in data:
-        existing_item = next((x for x in existing_data if x['name'] == item['name']), None)
+    # Clean and update the datalist
+    for data in datalist:
+        data['name'] = clean_text(data['name'])
+        data['answer_right'] = clean_text(data['answer_right'])
+        data['answer_wrong'] = [clean_text(wrong) for wrong in data['answer_wrong']]
         
-        if existing_item:
-            existing_wrong = existing_item.get('answer_wrong', [])
-            if isinstance(existing_wrong, int):
-                existing_wrong = [existing_wrong]
-            unique_wrong_values = [wrong for wrong in item['answer_wrong'] if wrong not in existing_wrong]
-            existing_wrong.extend(unique_wrong_values)
-            existing_item['answer_wrong'] = existing_wrong
-            existing_item['solved'] = item['solved']
-            existing_item['answer_right'] = item['answer_right']
-        else:
-            existing_data.append(item)
+        # Check if the data with this name already exists in the database
+        found = False
+        for entry in database:
+            if entry['name'] == data['name']:
+                entry['solved'] = data['solved']
+                entry['answer_right'] = data['answer_right']
+                entry['answer_wrong'] = list(set(entry['answer_wrong'] + data['answer_wrong']))
+                found = True
+                break
+        
+        if not found:
+            database.append(data)
+    
+    # Write the updated data back to the database file
+    with open(DATABASE_FILE, 'w') as file:
+        json.dump(database, file, indent=4)
 
-    with open(filename, 'w') as jsonfile:
-        json.dump(existing_data, jsonfile, indent=4)
-
-def pull_from_database(filename: str, item_name: str) -> Optional[Dict[str, Any]]:
-    try:
-        with open(filename, 'r') as jsonfile:
-            existing_data = json.load(jsonfile)
-    except FileNotFoundError:
-        print("Database file not found.")
+def pull_from_database(name):
+    """
+    Pulls data from the database by name.
+    """
+    name = clean_text(name)
+    
+    # Load existing data from the database file
+    if os.path.exists(DATABASE_FILE):
+        with open(DATABASE_FILE, 'r') as file:
+            database = json.load(file)
+    else:
         return None
 
-    normalized_item_name = clean_text(normalize_string(item_name))
-    return next((item for item in existing_data if clean_text(normalize_string(item['name'])) == normalized_item_name), None)
+    # Search for the data with the given name
+    for entry in database:
+        if entry['name'] == name:
+            return entry
+    
+    return None
 
-# Test data
-data = [
-    {
-        "name": "Test Item 1",
-        "answer_wrong": ["wrong1", "wrong2"],
-        "answer_right": "correct1",
-        "solved": True
-    },
-    {
-        "name": "Test Item 2",
-        "answer_wrong": ["wrong3"],
-        "answer_right": "Corrrwec   gasdgsg   nn\\n\\n\\n\n\n\n\n      h",
-        "solved": False
-    },
-    {
-        "name": "Test Item 10",
-        "answer_wrong": [],
-        "answer_right": None,
-        "solved": False
-    }
-]
+# Example usage
+if __name__ == "__main__":
+    datalist = [
+        {"name": "Question \n3\n\n", "solved": True, "answer_right": "Answer A", "answer_wrong": ["Answer B", "Answer C"]},
+        {"name": "Question 4", "solved": False, "answer_right": None, "answer_wrong": []}
+    ]
 
-# Push to database
-push_to_database('database.json', data)
-
-element = "String with spaces"
-print(clean_text(element))
-print(element)
+    # Pull data from the database
+    data = pull_from_database("УравнениеплоскойбегущейволныВыберитеодинответ:")
+    print(data)
