@@ -18,11 +18,11 @@ login_url = 'https://phys-online.ru/login/index.php'
 target_url = 'https://phys-online.ru/mod/quiz/view.php?id=54'
 
 # Your login credentials
-username = 'misammmmm@inbox.ru'
-password = '#89OO3657228Mm'
+username = ''
+password = ''
 
 # Path to your WebDriver
-driver_path = 'C:\\Users\\misam\\OneDrive\\Документы\\chromedriver-win64\\chromedriver.exe'  # Update with the correct path
+driver_path = ''  # Update with the correct path
 
 def convert_to_database_format(data):
     new_data = []
