@@ -15,14 +15,14 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=57'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=54'
 
 # Your login credentials
-username = ''
-password = ''
+username = 'misammmmm@inbox.ru'
+password = '#89OO3657228Mm'
 
 # Path to your WebDriver
-driver_path = ''  # Update with the correct path
+driver_path = 'C:\\Users\\misam\\OneDrive\\Документы\\chromedriver-win64\\chromedriver.exe'  # Update with the correct path
 
 def convert_to_database_format(data):
     new_data = []
@@ -110,6 +110,12 @@ def set_answer_solved_by_index(datalist, target_index, val : bool):
         if item['index'] == target_index:
             item['solved'] = val
             item['answer_right'] = item['answer']
+
+def get_data_by_index(datalist, target_index):
+    for item in datalist:
+        if item['index'] == target_index:
+            return item
+    return None
 
 while True:
     # Set up Chrome options for headless mode
@@ -341,13 +347,13 @@ while True:
 
         print('Answers are correct: ', end='')
         ans_index = 0
-        wrong_answers = 'Answers change Solved to False: '
+        wrong_answers = '\nAnswers change Solved to False: '
         for answer in answer_children:
             ans_index += 1
             if 'correct' in answer.get_attribute('class').split():
                 set_answer_solved_by_index(current_data, ans_index, True)
                 print(ans_index, end=' ')
-            if 'incorrect' in answer.get_attribute('class').split():
+            if 'incorrect' in answer.get_attribute('class').split() and get_data_by_index(current_data, ans_index)['solved']:
                 set_answer_solved_by_index(current_data, ans_index, False)
                 wrong_answers += str(ans_index) + ' '
 
