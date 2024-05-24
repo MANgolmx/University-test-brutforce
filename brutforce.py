@@ -217,8 +217,8 @@ while True:
                 isAnswered = False
                 if current_question and current_question['solved'] == True:
                     current_answer = current_question['answer_right']
-                    print(paragraph.get_text())
-                    print(current_answer)
+                    #print(paragraph.get_text())
+                    #print(current_answer)
                     
 
                     answers = que.find(class_='answer')
@@ -348,4 +348,4 @@ while True:
     finally:
         # Wait for next cycle
         driver.quit()
-        time.sleep(3)
+        time.sleep(300)
