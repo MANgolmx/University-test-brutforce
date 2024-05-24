@@ -4,6 +4,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from datetime import datetime, timedelta
 import os
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
@@ -67,7 +68,7 @@ def push_to_database(filename, datalist):
                 entry['solved'] = data['solved']
                 entry['answer_right'] = data['answer_right']
                 if data['answer_right']:
-                    entry['answer_wrong'] = list(None)
+                    entry['answer_wrong'] = [""]
                 else:
                     entry['answer_wrong'] = list(set(entry['answer_wrong'] + data['answer_wrong']))
                 found = True
@@ -115,6 +116,8 @@ while True:
     #options = webdriver.ChromeOptions()
     #options.add_argument('--headless')
     # Start a Selenium WebDriver session
+    print('Cycle started:', end=' ')
+    print(datetime.now().strftime('%H:%M:%S'))
     service = Service(driver_path)
     driver = webdriver.Chrome(service=service)
 
@@ -240,7 +243,7 @@ while True:
                             current_answer = answer
                             isAnswered = True
                             print(que_count + page * 5, ': Answer found in database')
-                            current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":True ,"answer": str(answer_children[answer_index].text)})
+                            current_data.append({"name":paragraph.get_text(),"index": que_count + page * 5,"solved":True ,"answer": str(current_answer.text)})
                             break
                         
                     if not isAnswered:
@@ -350,9 +353,13 @@ while True:
 
         print(wrong_answers)
         push_to_database('data_'+target_url[-2:]+'.json', convert_to_database_format(current_data))
-        print('\n\nData saved to data_'+target_url[-2:]+'.json')
-        print('Waiting for next cycle')
+        print('\nData saved to data_'+target_url[-2:]+'.json')
+        print('Waiting for next cycle. Aproximate time of the next cycle:', end=' ')
 
+        current_time = datetime.now()
+        new_time = current_time + timedelta(minutes=5)
+        print(new_time.strftime('%H:%M:%S'))
+        print('\n')
     finally:
         # Wait for next cycle
         driver.quit()
