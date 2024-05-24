@@ -4,6 +4,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 from datetime import datetime, timedelta
 import os
 from typing import List, Dict, Any, Optional
@@ -118,14 +119,17 @@ def get_data_by_index(datalist, target_index):
     return None
 
 while True:
-    # Set up Chrome options for headless mode
-    #options = webdriver.ChromeOptions()
-    #options.add_argument('--headless')
-    # Start a Selenium WebDriver session
+    chrome_options = Options() # You can disable/enable option below if you like to
+    chrome_options.add_argument("--headless")  # Disable driver window (also prints a lot of warnings in console)
+    chrome_options.add_argument("--disable-gpu")  # Disable GPU hardware acceleration
+    chrome_options.add_argument("--no-sandbox")   # Bypass OS security model
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
+    chrome_options.add_argument("--disable-infobars")  # Disable infobars
+
     print('Cycle started:', end=' ')
     print(datetime.now().strftime('%H:%M:%S'))
     service = Service(driver_path)
-    driver = webdriver.Chrome(service=service)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
     try:
         driver.get(login_url)
@@ -345,7 +349,7 @@ while True:
             print('answer_children for test not found.')
             exit()
 
-        print('Answers are correct: ', end='')
+        print('\nAnswers are correct: ', end='')
         ans_index = 0
         wrong_answers = '\nAnswers change Solved to False: '
         for answer in answer_children:
@@ -360,7 +364,7 @@ while True:
         print(wrong_answers)
         push_to_database('data_'+target_url[-2:]+'.json', convert_to_database_format(current_data))
         print('\nData saved to data_'+target_url[-2:]+'.json')
-        print('Waiting for next cycle. Aproximate time of the next cycle:', end=' ')
+        print('Cycle ended. Aproximate time of the next cycle:', end=' ')
 
         current_time = datetime.now()
         new_time = current_time + timedelta(minutes=5)
