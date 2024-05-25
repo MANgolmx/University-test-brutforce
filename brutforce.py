@@ -372,5 +372,6 @@ while True:
         print('\n')
     finally:
         # Wait for next cycle
+        driver.close()
         driver.quit()
         time.sleep(300)
