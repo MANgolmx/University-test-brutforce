@@ -16,14 +16,16 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=54'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=56'
 
 # Your login credentials
-username = ''
-password = ''
+username = 'misammmmm@inbox.ru'
+password = '#89OO3657228Mm'
 
-# Path to your WebDriver
-driver_path = ''  # Update with the correct path
+# Path to your 
+driver_path = 'C:\\Users\\misam\\OneDrive\\Документы\\chromedriver-win64\\chromedriver.exe'  # Update with the correct path
+
+sleepTime = 300
 
 def convert_to_database_format(data):
     new_data = []
@@ -367,11 +369,11 @@ while True:
         print('Cycle ended. Aproximate time of the next cycle:', end=' ')
 
         current_time = datetime.now()
-        new_time = current_time + timedelta(minutes=5)
+        new_time = current_time + timedelta(seconds=sleepTime)
         print(new_time.strftime('%H:%M:%S'))
         print('\n')
     finally:
         # Wait for next cycle
         driver.close()
         driver.quit()
-        time.sleep(300)
+        time.sleep(sleepTime)
