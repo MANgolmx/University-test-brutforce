@@ -16,14 +16,16 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=56'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=58'
 
 # Your login credentials
-username = 'misammmmm@inbox.ru'
-password = '#89OO3657228Mm'
+username = ''
+password = ''
 
 # Path to your 
 driver_path = 'C:\\Users\\misam\\OneDrive\\Документы\\chromedriver-win64\\chromedriver.exe'  # Update with the correct path
+
+pageCount = 4 # Update with number of pages
 
 sleepTime = 300
 
@@ -201,7 +203,7 @@ while True:
 
         current_data = []
 
-        for page in range(0, 3):
+        for page in range(0, pageCount):
             if 'https://phys-online.ru/mod/quiz/summary.php' in driver.current_url or 'https://phys-online.ru/mod/quiz/review.php' in driver.current_url:
                 print('\nTest finished\n')
                 break
