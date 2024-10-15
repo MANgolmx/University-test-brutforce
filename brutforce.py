@@ -43,6 +43,9 @@ def convert_to_database_format(data):
     
     return new_data
 
+def has_numbers(inputString):
+    return any(char.isdigit() for char in inputString)
+
 def clean_text(text):
     if text == None:
         return ""
@@ -368,7 +371,10 @@ while True:
                 wrong_answers += str(ans_index) + ' '
 
         print('Total right answers: ', rightAnsCount)
-        print(wrong_answers)
+
+        if has_numbers(wrong_answers):
+            print(wrong_answers)
+
         push_to_database('data_'+target_url[-2:]+'.json', convert_to_database_format(current_data))
         print('\nData saved to data_'+target_url[-2:]+'.json')
         print('Cycle ended. Aproximate time of the next cycle:', end=' ')
