@@ -16,7 +16,7 @@ import re
 
 # URL of the login page and the target page
 login_url = 'https://phys-online.ru/login/index.php'
-target_url = 'https://phys-online.ru/mod/quiz/view.php?id=58'
+target_url = 'https://phys-online.ru/mod/quiz/view.php?id=60'
 
 # Your login credentials
 username = ''
@@ -355,16 +355,19 @@ while True:
 
         print('\nAnswers are correct: ', end='')
         ans_index = 0
+        rightAnsCount = 0
         wrong_answers = '\nAnswers change Solved to False: '
         for answer in answer_children:
             ans_index += 1
             if 'correct' in answer.get_attribute('class').split():
                 set_answer_solved_by_index(current_data, ans_index, True)
                 print(ans_index, end=' ')
+                rightAnsCount+=1
             if 'incorrect' in answer.get_attribute('class').split() and get_data_by_index(current_data, ans_index)['solved']:
                 set_answer_solved_by_index(current_data, ans_index, False)
                 wrong_answers += str(ans_index) + ' '
 
+        print('Total right answers: ', rightAnsCount)
         print(wrong_answers)
         push_to_database('data_'+target_url[-2:]+'.json', convert_to_database_format(current_data))
         print('\nData saved to data_'+target_url[-2:]+'.json')
